@@ -58,7 +58,7 @@ This project documents the design, deployment, and validation of a **multi-layer
 
 ## 🧪 Simulation & Evidence Collection
 
-### Step 1: Payload Delivery Execution
+Payload Delivery Execution
 A Living-off-the-Land technique was executed on the Windows 11 endpoint using PowerShell to download a synthetic malware payload (`EICAR`):
 
 ```powershell
@@ -108,50 +108,6 @@ Phase	Timestamp	Layer	Executing Image / Source	Captured Activity Summary
 1. Contextual Correlation: Network logs identified where outbound requests traveled (eicar.org), while Sysmon logs identified who initiated the traffic (HomeLab) and how (powershell.exe).
 2. SIEM Noise Reduction: Tuning out operational scripts like splunk-powershell.exe is essential to prevent alert fatigue and reduce Mean Time to Detect (MTTD).
 3. Defense-in-Depth Validation: Verifying that endpoint defense mechanisms (MsMpEng.exe) properly report remediation events into the SIEM ensures complete incident response auditability.
-
----
-
-# 📱 PART 3: LinkedIn Post Copy & Instructions
-
-### LinkedIn Posting Strategy
-1. Open LinkedIn and click **Start a post**.
-2. Paste the exact text from the box below.
-3. Replace `[LINK TO YOUR GITHUB REPOSITORY]` with your actual GitHub repository URL.
-4. Click **Media** (Image icon) and select **both** of your screenshots so they appear attached to the post.
-5. Click **Post**.
-
----
-
-### LinkedIn Text Copy
-
-```text
-🚀 Built a Multi-Layer SOC Detection & Threat Correlation Pipeline in Splunk SIEM!
-
-In security operations, visibility across both host and network layers is critical. Investigating a NIDS network alert without host process context often creates investigation bottlenecks. 
-
-To demonstrate end-to-end threat visibility, I built a hands-on cybersecurity detection lab that ingests, normalizes, and correlates host, network, and EDR/AV logs inside Splunk Enterprise.
-
- Here is how the incident detection pipeline works:
-
-1️⃣ Adversary Simulation (Living-off-the-Land):
-Executed an outbound payload download command via Windows PowerShell (`Invoke-WebRequest`) targeting an EICAR test file to simulate web-based malware delivery.
-
-2️⃣ Multi-Layer Telemetry Capture:
-• Endpoint Layer: Sysmon (Event ID 1) logged the process execution, PID, user context (HomeLab), and command-line parameters.
-• Network Layer: Suricata NIDS logged the outbound HTTP session, destination domain, and URI requests at the perimeter gateway.
-• Host Defense: Microsoft Defender AV (MsMpEng.exe) flagged the payload creation in AppData\Local\Temp\eicar_payload.exe and quarantined it immediately.
-
-3️⃣ SIEM Correlation in Splunk:
-Shipped all logs into Splunk Enterprise via Splunk Universal Forwarder. Wrote custom SPL queries to filter background noise (such as internal splunk-powershell.exe executions) and generated an executive incident timeline tracking Execution ➡️ Network Session ➡️ File Drop ➡️ AV Quarantine.
-
-🔍 Key Takeaway: Correlating NIDS events with Sysmon process telemetry drastically reduces Mean Time to Respond (MTTR). Analysts can instantly trace a malicious network request directly back to the exact process ID, user account, and command line that generated it.
-
-🛠️ Tech Stack: Splunk Enterprise, Sysmon, Suricata NIDS, Microsoft Defender AV, Windows PowerShell, Windows 11, Ubuntu Linux.
-
-📌 Full technical write-up, architecture diagram, and SPL queries are available on my GitHub:
-[LINK TO YOUR GITHUB REPOSITORY]
-
-#Cybersecurity #SIEM #Splunk #Sysmon #Suricata #SOCAnalyst #BlueTeam #ThreatHunting #DetectionEngineering #InfoSec
 
 👤 Connect with Me
 Author: Ranjit Singh
