@@ -95,6 +95,7 @@ To correlate the full incident lifecycle across host execution, perimeter detect
 )
 | table _time, Activity, Image, TargetFilename, CommandLine
 | sort - _time
+
 Screenshot 2: Splunk search results displaying synchronized host execution logs, target file drops, and Defender quarantine events.
 
 📊 Incident Attack Lifecycle Matrix
