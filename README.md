@@ -1,14 +1,20 @@
-🛡️ Cross-Layer Threat Detection & Telemetry Correlation Lab
-Correlating Endpoint Process Logs (Sysmon), Network Traffic (Suricata NIDS), and Host Antivirus Responses (Microsoft Defender) in Splunk Enterprise SIEM.
+# 🛡️ Cross-Layer Threat Detection & Telemetry Correlation Lab
 
-📌 Executive Summary
+> **Correlating Endpoint Process Logs (Sysmon), Network Traffic (Suricata NIDS), and Host Antivirus Responses (Microsoft Defender) in Splunk Enterprise SIEM.**
+
+---
+
+## 📌 Executive Summary
+
 In enterprise Security Operations Centers (SOCs), investigating alerts across isolated security tools often leads to context gaps and delayed incident response. A Network Intrusion Detection System (NIDS) might flag a suspicious HTTP file request, but without host telemetry, identifying the originating process ID, user account, or execution context requires manual pivoting.
 
-This project documents the design, deployment, and validation of a multi-layered detection pipeline. By executing a Living-off-the-Land (LotL) payload download using Windows PowerShell, host process creation events (Sysmon Event ID 1), network HTTP sessions (Suricata NIDS), and host protection alerts (Microsoft Defender AV) were ingested and correlated inside Splunk Enterprise to generate a unified attack timeline.
+This project documents the design, deployment, and validation of a **multi-layered detection pipeline**. By executing a Living-off-the-Land (LotL) payload download using Windows PowerShell, host process creation events (**Sysmon Event ID 1**), network HTTP sessions (**Suricata NIDS**), and host protection alerts (**Microsoft Defender AV**) were ingested and correlated inside **Splunk Enterprise** to generate a unified attack timeline.
 
-🏗️ Architecture & Telemetry Pipeline
-text
+---
 
+## 🏗️ Architecture & Telemetry Pipeline
+
+```text
                     ┌───────────────────────────────────┐
                     │     Adversary Execution Vector    │
                     │     PowerShell Invoke-WebRequest  │
@@ -36,40 +42,57 @@ text
                       │      Splunk Enterprise      │
                       │    (Search & Dashboard)     │
                       └─────────────────────────────┘
-🛠️ Technology Stack
-Component	Technology	Function in Environment
-Endpoint Host	Windows 10 Pro VM (DESKTOP-S7EO8FC)	Victim machine executing threat simulation
-Endpoint Sensor	Windows Sysmon	Captures Process Creation (Event Code 1) & File Creation (Event Code 11)
-Antivirus / EDR	Microsoft Defender AV (MsMpEng.exe)	Quarantines malicious payload drops in real time
-NIDS Sensor	Suricata	Monitors perimeter network interface and generates eve.json HTTP logs
-Forwarder Agent	Splunk Universal Forwarder	Ships Windows Event Logs and Sysmon logs to SIEM
-SIEM Host	Windows 11 Pro (Physical Host)	Runs the Splunk Enterprise indexer & search head
-SIEM Engine	Splunk Enterprise	Centralized indexing, normalization, and SPL correlation
-🧪 Simulation & Evidence Collection
-Payload Delivery Execution
-A Living-off-the-Land technique was executed on the Windows 10 Pro target VM using PowerShell to download a synthetic malware payload (EICAR):
+```
 
-PowerShell
+---
 
+## 🛠️ Technology Stack
+
+| Component | Technology | Function in Environment |
+| :--- | :--- | :--- |
+| **Endpoint Host** | Windows 10 Pro VM (`DESKTOP-S7EO8FC`) | Victim machine executing threat simulation |
+| **Endpoint Sensor** | Windows Sysmon | Captures Process Creation (Event Code 1) & File Creation (Event Code 11) |
+| **Antivirus / EDR** | Microsoft Defender AV (`MsMpEng.exe`) | Quarantines malicious payload drops in real time |
+| **NIDS Sensor** | Suricata | Monitors perimeter network interface and generates `eve.json` HTTP logs |
+| **Forwarder Agent** | Splunk Universal Forwarder | Ships Windows Event Logs and Sysmon logs to SIEM |
+| **SIEM Host** | Windows 11 Pro (Physical Host) | Runs the Splunk Enterprise indexer & search head |
+| **SIEM Engine** | Splunk Enterprise | Centralized indexing, normalization, and SPL correlation |
+
+---
+
+## 🧪 Simulation & Evidence Collection
+
+### Payload Delivery Execution
+
+A Living-off-the-Land technique was executed on the **Windows 10 Pro target VM** using PowerShell to download a synthetic malware payload (`EICAR`):
+
+```powershell
 Invoke-WebRequest -Uri "http://www.eicar.org/download/eicar.com.txt" -OutFile "$env:TEMP\eicar_payload.exe"
-PowerShell executing the payload download and triggering an immediate Microsoft Defender AV quarantine alert
+```
 
-Screenshot 1: PowerShell executing the payload download and triggering an immediate Microsoft Defender AV quarantine toast alert.
+![PowerShell executing the payload download and triggering an immediate Microsoft Defender AV quarantine alert](01_powershell_execution_defender_alert.png)
 
-Telemetry Ingestion & Analysis
+*Screenshot 1: PowerShell executing the payload download and triggering an immediate Microsoft Defender AV quarantine toast alert.*
+
+### Telemetry Ingestion & Analysis
+
 Upon execution, three distinct log sources generated telemetry simultaneously:
 
-Sysmon Event ID 1 (Process Creation): Recorded powershell.exe launching with full command line arguments, executed under user HomeLab.
-Suricata NIDS Log: Captured outbound HTTP GET traffic from 172.20.10.2 requesting /download/eicar.com.txt from host www.eicar.org.
-Sysmon / Defender Action Log: Documented MsMpEng.exe intercepting and quarantining the file creation attempt at C:\Users\HomeLab\AppData\Local\Temp\eicar_payload.exe.
-🔍 Threat Hunting & SIEM Engineering (SPL)
-1. Eliminating Forwarder Background Noise
-Initial searches for powershell.exe returned heavy internal background traffic generated by the Splunk Universal Forwarder (splunk-powershell.exe).
+1. **Sysmon Event ID 1 (Process Creation):** Recorded `powershell.exe` launching with full command line arguments, executed under user `HomeLab`.
+2. **Suricata NIDS Log:** Captured outbound HTTP GET traffic from `172.20.10.2` requesting `/download/eicar.com.txt` from host `www.eicar.org`.
+3. **Sysmon / Defender Action Log:** Documented `MsMpEng.exe` intercepting and quarantining the file creation attempt at `C:\Users\HomeLab\AppData\Local\Temp\eicar_payload.exe`.
 
-To eliminate false positives and normalize Suricata's nested JSON HTTP fields (http.url), the query was refined:
+---
 
-spl
+## 🔍 Threat Hunting & SIEM Engineering (SPL)
 
+### 1. Eliminating Forwarder Background Noise
+
+Initial searches for `powershell.exe` returned heavy internal background traffic generated by the Splunk Universal Forwarder (`splunk-powershell.exe`).
+
+To eliminate false positives and normalize Suricata's nested JSON HTTP fields (`http.url`), the query was refined:
+
+```spl
 (sourcetype="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1 Image="*powershell.exe" NOT Image="*splunk-powershell.exe*")
 OR
 (sourcetype="suricata" event_type=http)
@@ -77,11 +100,13 @@ OR
 | eval Target_URL = coalesce('http.url', url, 'http.hostname')
 | eval User_Agent = coalesce('http.http_user_agent', http_user_agent)
 | table _time, Activity_Type, Image, CommandLine, Target_URL, src_ip, dest_ip, User_Agent
-2. Multi-Stage Incident Timeline Query
+```
+
+### 2. Multi-Stage Incident Timeline Query
+
 To correlate the full incident lifecycle across host execution, perimeter detection, and endpoint quarantine:
 
-spl
-
+```spl
 "eicar" OR "Invoke-WebRequest"
 | eval Activity = case(
     like(Image, "%powershell.exe%"), "ENDPOINT: PowerShell Download Command Executed",
@@ -90,27 +115,45 @@ spl
 )
 | table _time, Activity, Image, TargetFilename, CommandLine
 | sort - _time
-Splunk search results displaying synchronized host execution logs, target file drops, and Defender quarantine events
+```
 
-Screenshot 2: Splunk search results displaying synchronized host execution logs, target file drops, and Defender quarantine events.
+![Splunk search results displaying synchronized host execution logs, target file drops, and Defender quarantine events](02_splunk_correlation_timeline.png)
 
-📊 Incident Attack Lifecycle Matrix
-Phase	Timestamp	Layer	Executing Image / Source	Captured Activity Summary
-1. Execution	19:30:00	Endpoint	powershell.exe (PID 8132)	Executed Invoke-WebRequest downloading EICAR test payload
-2. Delivery	19:30:00	Perimeter	Suricata NIDS	Logged HTTP connection to www.eicar.org downloading eicar.com.txt
-3. File Drop	19:30:00	Endpoint	Sysmon (Event ID 11)	Detected file write attempt: AppData\Local\Temp\eicar_payload.exe
-4. Defense	19:31:34	EDR / AV	MsMpEng.exe (PID 2880)	Intercepted threat signature, blocked execution, and isolated payload
-🔑 Key Engineering Insights
-Contextual Correlation: Network logs identified where outbound requests traveled (eicar.org), while Sysmon logs identified who initiated the traffic (HomeLab) and how (powershell.exe).
-SIEM Noise Reduction: Tuning out operational scripts like splunk-powershell.exe is essential to prevent alert fatigue and reduce Mean Time to Detect (MTTD).
-Defense-in-Depth Validation: Verifying that endpoint defense mechanisms (MsMpEng.exe) properly report remediation events into the SIEM ensures complete incident response auditability.
-🎓 Skills Demonstrated
-SIEM Engineering: Multi-source log ingestion, field normalization, and cross-platform correlation in Splunk Enterprise
-Detection Engineering: SPL query development, false-positive tuning, and alert fidelity improvement
-Network Security Monitoring: Suricata NIDS deployment and eve.json HTTP session analysis
-Endpoint Forensics: Sysmon Event ID 1 & 11 analysis, process lineage, and file-drop tracking
-Incident Response: Attack lifecycle reconstruction and defense-in-depth validation
-👤 Connect with Me
-Author: Ranjit Singh — CompTIA Security+ (SY0-701) Certified
-LinkedIn: linkedin.com/in/ranjit-singh-a878a93b9
-GitHub: github.com/RanjitSingh-SOC1
+*Screenshot 2: Splunk search results displaying synchronized host execution logs, target file drops, and Defender quarantine events.*
+
+---
+
+## 📊 Incident Attack Lifecycle Matrix
+
+| Phase | Timestamp | Layer | Executing Image / Source | Captured Activity Summary |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Execution** | 19:30:00 | Endpoint | `powershell.exe` (PID 8132) | Executed `Invoke-WebRequest` downloading EICAR test payload |
+| **2. Delivery** | 19:30:00 | Perimeter | Suricata NIDS | Logged HTTP connection to `www.eicar.org` downloading `eicar.com.txt` |
+| **3. File Drop** | 19:30:00 | Endpoint | Sysmon (Event ID 11) | Detected file write attempt: `AppData\Local\Temp\eicar_payload.exe` |
+| **4. Defense** | 19:31:34 | EDR / AV | `MsMpEng.exe` (PID 2880) | Intercepted threat signature, blocked execution, and isolated payload |
+
+---
+
+## 🔑 Key Engineering Insights
+
+1. **Contextual Correlation:** Network logs identified *where* outbound requests traveled (`eicar.org`), while Sysmon logs identified *who* initiated the traffic (`HomeLab`) and *how* (`powershell.exe`).
+2. **SIEM Noise Reduction:** Tuning out operational scripts like `splunk-powershell.exe` is essential to prevent alert fatigue and reduce Mean Time to Detect (MTTD).
+3. **Defense-in-Depth Validation:** Verifying that endpoint defense mechanisms (`MsMpEng.exe`) properly report remediation events into the SIEM ensures complete incident response auditability.
+
+---
+
+## 🎓 Skills Demonstrated
+
+- **SIEM Engineering:** Multi-source log ingestion, field normalization, and cross-platform correlation in Splunk Enterprise
+- **Detection Engineering:** SPL query development, false-positive tuning, and alert fidelity improvement
+- **Network Security Monitoring:** Suricata NIDS deployment and `eve.json` HTTP session analysis
+- **Endpoint Forensics:** Sysmon Event ID 1 & 11 analysis, process lineage, and file-drop tracking
+- **Incident Response:** Attack lifecycle reconstruction and defense-in-depth validation
+
+---
+
+## 👤 Connect with Me
+
+**Author:** Ranjit Singh — CompTIA Security+ (SY0-701) Certified
+**LinkedIn:** [linkedin.com/in/ranjit-singh-a878a93b9](https://www.linkedin.com/in/ranjit-singh-a878a93b9)
+**GitHub:** [github.com/RanjitSingh-SOC1](https://github.com/RanjitSingh-SOC1)
