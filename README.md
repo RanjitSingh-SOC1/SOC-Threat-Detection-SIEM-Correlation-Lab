@@ -23,7 +23,7 @@ This project documents the design, deployment, and validation of a **multi-layer
              ▼                                                             ▼
              ┌─────────────────────────────┐ ┌─────────────────────────────┐
 │ ENDPOINT TELEMETRY │ │ NETWORK TELEMETRY │
-│ Windows 11 Machine │ │ Ubuntu Gateway Sensor │
+│ Windows 10 Pro VM │ │ Ubuntu Gateway Sensor │
 ├─────────────────────────────┤ ├─────────────────────────────┤
 │ • Host: DESKTOP-S7EO8FC │ │ • Engine: Suricata NIDS │
 │ • User: HomeLab │ │ • Output: eve.json (HTTP) │
