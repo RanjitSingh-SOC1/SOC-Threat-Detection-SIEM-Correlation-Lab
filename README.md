@@ -47,7 +47,7 @@ This project documents the design, deployment, and validation of a **multi-layer
 
 | Component | Technology | Function in Environment |
 | :--- | :--- | :--- |
-| **Endpoint Host** | Windows 11 Enterprise (`DESKTOP-S7EO8FC`) | Victim machine executing threat simulation |
+| **Endpoint Host** | Windows 10 Pro VM (`DESKTOP-S7EO8FC`) | Victim machine executing threat simulation |
 | **Endpoint Sensor** | Windows Sysmon | Captures Process Creation (Event Code 1) & File Creation (Event Code 11) |
 | **Antivirus / EDR** | Microsoft Defender AV (`MsMpEng.exe`) | Quarantines malicious payload drops in real time |
 | **NIDS Sensor** | Suricata | Monitors perimeter network interface and generates `eve.json` HTTP logs |
